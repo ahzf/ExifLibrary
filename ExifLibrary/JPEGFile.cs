@@ -38,6 +38,7 @@ namespace ExifLibrary
         #endregion
 
         #region Constructor
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ExifFile"/> class.
         /// </summary>
@@ -45,6 +46,7 @@ namespace ExifLibrary
         /// <param name="encoding">The encoding to be used for text metadata when the source encoding is unknown.</param>
         protected internal JPEGFile(Stream stream, Encoding encoding)
         {
+
             Format = ImageFileFormat.JPEG;
             Sections = new List<JPEGSection>();
             TrailingData = new byte[0];
@@ -54,20 +56,22 @@ namespace ExifLibrary
 
             // Read the Start of Image (SOI) marker. SOI marker is represented
             // with two bytes: 0xFF, 0xD8.
-            byte[] markerbytes = new byte[2];
+            var markerbytes = new byte[2];
             if (stream.Read(markerbytes, 0, 2) != 2 || markerbytes[0] != 0xFF || markerbytes[1] != 0xD8)
                 throw new NotValidJPEGFileException();
+
             stream.Seek(0, SeekOrigin.Begin);
 
             // Search and read sections until we reach the end of file.
             while (stream.Position != stream.Length)
             {
+
                 // Read the next section marker. Section markers are two bytes 
                 // with values 0xFF, 0x?? where ?? must not be 0x00 or 0xFF.
                 if (stream.Read(markerbytes, 0, 2) != 2 || markerbytes[0] != 0xFF || markerbytes[1] == 0x00 || markerbytes[1] == 0xFF)
                     throw new NotValidJPEGFileException();
 
-                JPEGMarker marker = (JPEGMarker)markerbytes[1];
+                var marker = (JPEGMarker) markerbytes[1];
 
                 byte[] header = new byte[0];
                 // SOI, EOI and RST markers do not contain any header
@@ -149,7 +153,7 @@ namespace ExifLibrary
                 }
 
                 // Store section.
-                JPEGSection section = new JPEGSection(marker, header, entropydata);
+                var section = new JPEGSection(marker, header, entropydata);
                 Sections.Add(section);
 
                 // Some propriety formats store data past the EOI marker
@@ -175,7 +179,9 @@ namespace ExifLibrary
 
             // Process the maker note
             makerNoteProcessed = false;
+
         }
+
         #endregion
 
         #region Instance Methods
@@ -272,11 +278,13 @@ namespace ExifLibrary
         #endregion
 
         #region Private Helper Methods
+
         /// <summary>
         /// Reads the APP0 section containing JFIF metadata.
         /// </summary>
         private void ReadJFIFAPP0()
         {
+
             // Find the APP0 section containing JFIF metadata
             jfifApp0 = Sections.Find(a => (a.Marker == JPEGMarker.APP0) &&
                 a.Header.Length >= 5 &&
@@ -314,12 +322,15 @@ namespace ExifLibrary
             byte[] jfifThumbnail = new byte[n];
             Array.Copy(header, 14, jfifThumbnail, 0, n);
             Properties.Add(new JFIFThumbnailProperty(ExifTag.JFIFThumbnail, new JFIFThumbnail(JFIFThumbnail.ImageFormat.JPEG, jfifThumbnail)));
+
         }
+
         /// <summary>
         /// Replaces the contents of the APP0 section with the JFIF properties.
         /// </summary>
         private bool WriteJFIFApp0()
         {
+
             // Which IFD sections do we have?
             List<ExifProperty> ifdjfef = new List<ExifProperty>();
             foreach (ExifProperty prop in Properties)
@@ -356,12 +367,15 @@ namespace ExifLibrary
             // Return APP0 header
             jfifApp0.Header = ms.ToArray();
             return true;
+
         }
+
         /// <summary>
         /// Reads the APP0 section containing JFIF extension metadata.
         /// </summary>
         private void ReadJFXXAPP0()
         {
+
             // Find the APP0 section containing JFIF metadata
             jfxxApp0 = Sections.Find(a => (a.Marker == JPEGMarker.APP0) &&
                 a.Header.Length >= 5 &&
@@ -374,7 +388,7 @@ namespace ExifLibrary
             byte[] header = jfxxApp0.Header;
 
             // Version
-            JFIFExtension version = (JFIFExtension)header[5];
+            var version = (JFIFExtension) header[5];
             Properties.Add(new ExifEnumProperty<JFIFExtension>(ExifTag.JFXXExtensionCode, version));
 
             // Read thumbnail
@@ -384,6 +398,7 @@ namespace ExifLibrary
                 Array.Copy(header, 6, data, 0, data.Length);
                 Properties.Add(new JFIFThumbnailProperty(ExifTag.JFXXThumbnail, new JFIFThumbnail(JFIFThumbnail.ImageFormat.JPEG, data)));
             }
+
             else if (version == JFIFExtension.Thumbnail24BitRGB)
             {
                 // Thumbnails pixel count
@@ -395,6 +410,7 @@ namespace ExifLibrary
                 Array.Copy(header, 8, data, 0, data.Length);
                 Properties.Add(new JFIFThumbnailProperty(ExifTag.JFXXThumbnail, new JFIFThumbnail(JFIFThumbnail.ImageFormat.BMP24Bit, data)));
             }
+
             else if (version == JFIFExtension.ThumbnailPaletteRGB)
             {
                 // Thumbnails pixel count
@@ -408,12 +424,15 @@ namespace ExifLibrary
                 Array.Copy(header, 8 + 768, data, 0, data.Length);
                 Properties.Add(new JFIFThumbnailProperty(ExifTag.JFXXThumbnail, new JFIFThumbnail(palette, data)));
             }
+
         }
+
         /// <summary>
         /// Replaces the contents of the APP0 section with the JFIF extension properties.
         /// </summary>
         private bool WriteJFXXApp0()
         {
+
             // Which IFD sections do we have?
             List<ExifProperty> ifdjfef = new List<ExifProperty>();
             foreach (ExifProperty prop in Properties)
@@ -448,7 +467,9 @@ namespace ExifLibrary
 
             // Return APP0 header
             jfxxApp0.Header = ms.ToArray();
+
             return true;
+
         }
 
         /// <summary>
@@ -456,6 +477,7 @@ namespace ExifLibrary
         /// </summary>
         private void ReadExifAPP1()
         {
+
             // Find the APP1 section containing Exif metadata
             exifApp1 = Sections.Find(a => (a.Marker == JPEGMarker.APP1) &&
                 a.Header.Length >= 6 &&
@@ -603,6 +625,7 @@ namespace ExifLibrary
                     // Create the exif property from the interop data
                     ExifProperty prop = ExifPropertyFactory.Get(tag, type, count, value, ByteOrder, currentifd, Encoding);
                     Properties.Add(prop);
+
                 }
 
                 // 1st IFD pointer
@@ -620,6 +643,7 @@ namespace ExifLibrary
                         }
                     }
                 }
+
             }
         }
 
@@ -628,6 +652,7 @@ namespace ExifLibrary
         /// </summary>
         private bool WriteExifApp1(bool preserveMakerNote)
         {
+
             // Zero out IFD field offsets. We will fill those as we write the IFD sections
             exifIFDFieldOffset = 0;
             gpsIFDFieldOffset = 0;
@@ -653,11 +678,11 @@ namespace ExifLibrary
             }
 
             // Which IFD sections do we have?
-            Dictionary<ExifTag, ExifProperty> ifdzeroth = new Dictionary<ExifTag, ExifProperty>();
-            Dictionary<ExifTag, ExifProperty> ifdexif = new Dictionary<ExifTag, ExifProperty>();
-            Dictionary<ExifTag, ExifProperty> ifdgps = new Dictionary<ExifTag, ExifProperty>();
-            Dictionary<ExifTag, ExifProperty> ifdinterop = new Dictionary<ExifTag, ExifProperty>();
-            Dictionary<ExifTag, ExifProperty> ifdfirst = new Dictionary<ExifTag, ExifProperty>();
+            var ifdzeroth  = new Dictionary<ExifTag, ExifProperty>();
+            var ifdexif    = new Dictionary<ExifTag, ExifProperty>();
+            var ifdgps     = new Dictionary<ExifTag, ExifProperty>();
+            var ifdinterop = new Dictionary<ExifTag, ExifProperty>();
+            var ifdfirst   = new Dictionary<ExifTag, ExifProperty>();
 
             foreach (ExifProperty prop in Properties)
             {
@@ -775,6 +800,7 @@ namespace ExifLibrary
 
         private void WriteIFD(MemoryStream stream, Dictionary<ExifTag, ExifProperty> ifd, IFD ifdtype, long tiffoffset, bool preserveMakerNote)
         {
+
             BitConverterEx conv = new BitConverterEx(BitConverterEx.SystemByteOrder, ByteOrder);
 
             // Create a queue of fields to write
@@ -913,6 +939,9 @@ namespace ExifLibrary
                 }
             }
         }
+
         #endregion
+
     }
+
 }
