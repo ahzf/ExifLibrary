@@ -57,31 +57,22 @@ namespace ExifLibrary
         public static DateTime ToDateTime(byte[] data, bool hastime)
         {
             string str = ToAscii(data, Encoding.ASCII);
-            string[] parts = str.Split(new char[] { ':', ' ' });
             try
             {
-                if (hastime && parts.Length == 6)
-                {
-                    // yyyy:MM:dd HH:mm:ss
-                    // This is the expected format though some cameras
-                    // can use single digits. See Issue 21.
-                    return new DateTime(int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]), int.Parse(parts[3]), int.Parse(parts[4]), int.Parse(parts[5]));
-                }
-                else if (!hastime && parts.Length == 3)
-                {
-                    // yyyy:MM:dd
-                    return new DateTime(int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]));
-                }
-                else
-                {
-                    return DateTime.MinValue;
-                }
+                return DateTime.ParseExact(str,
+                    new[]
+                    {
+                        "yyyy:MM:dd HH:mm:ss",
+                        "yyyy:MM:dd",
+                        "dd/MM/yyyy H:mm",
+                        "dd/MM/yyyy HH:mm",
+                        "yyyy-MM-dd HH:mm:ss"
+                    }, 
+                    CultureInfo.InvariantCulture, 
+                    DateTimeStyles.None);
+
             }
-            catch (ArgumentOutOfRangeException)
-            {
-                return DateTime.MinValue;
-            }
-            catch (ArgumentException)
++           catch(Exception e)
             {
                 return DateTime.MinValue;
             }
